@@ -34,8 +34,10 @@ int V4L2Control::whitebalance_auto = 0;
 V4L2Control::V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
                          MainWindow *mw,
                          ros::Publisher* pub) :
-  cid(ctrl.id), default_value(ctrl.default_value), mw(mw),
-  pub_(pub)
+  cid(ctrl.id),
+  default_value(ctrl.default_value),
+  pub_(pub),
+  mw(mw)
 {
   this->fd = fd;
   strncpy(name, (const char *)ctrl.name, sizeof(name));
