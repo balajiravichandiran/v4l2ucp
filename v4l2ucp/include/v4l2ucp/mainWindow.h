@@ -19,9 +19,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
  */
+#include <map>
 #include <ros/ros.h>
 #include <std_msgs/Int32.h>
-#include "v4l2ucp/v4l2controls.h"
+#include <string>
+#include <v4l2ucp/v4l2controls.h>
 
 class MainWindow
 {

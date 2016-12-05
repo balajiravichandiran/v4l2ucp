@@ -273,7 +273,7 @@ V4L2MenuControl::V4L2MenuControl
     else
     {
       ROS_ERROR_STREAM(name << " Unable to get menu item" << qm.index);
-      //cb->insertItem(i, "Unknown");
+      // cb->insertItem(i, "Unknown");
     }
   }
   // cb->setCurrentIndex(default_value);

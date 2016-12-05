@@ -25,6 +25,7 @@
 #include <libv4l2.h>
 #include <ros/ros.h>
 #include <std_msgs/Empty.h>
+#include <string>
 #include <sys/ioctl.h>
 
 #include "v4l2ucp/mainWindow.h"
@@ -113,7 +114,7 @@ MainWindow::~MainWindow()
 
 bool not_alnum(char s)
 {
-  return not std::isalnum(s);
+  return !std::isalnum(s);
 }
 
 void MainWindow::add_control(const struct v4l2_queryctrl &ctrl, int fd)
@@ -121,10 +122,11 @@ void MainWindow::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   std::stringstream name_ss;
   name_ss << ctrl.name;
   std::string name = name_ss.str();
-  //std::replace(name.begin(), name.end(), " ", "_");
+  // std::replace(name.begin(), name.end(), " ", "_");
 
   // http://stackoverflow.com/questions/6319872/how-to-strip-all-non-alphanumeric-characters-from-a-string-in-c
-  // name.erase(std::remove_if(name.begin(), name.end(), std::not1(std::ptr_fun(std::isalnum)), name.end()), name.end());
+  // name.erase(std::remove_if(name.begin(), name.end(),
+  // std::not1(std::ptr_fun(std::isalnum)), name.end()), name.end());
   name.erase(std::remove_if(name.begin(), name.end(),
       (int(*)(int))not_alnum), name.end());
 
@@ -170,7 +172,7 @@ void MainWindow::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   case V4L2_CTRL_TYPE_CTRL_CLASS:
     ros::param::set("controls/" + name + "_type", "ctrl");
   default:
-    ros::param::set("controls/" + name + "_type", int(ctrl.type));
+    ros::param::set("controls/" + name + "_type", static_cast<int>(ctrl.type));
     break;
   }
 

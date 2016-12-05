@@ -107,7 +107,6 @@ public:
 
   V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
       ros::Publisher* pub);
-
 };
 
 #endif  // V4L2UCP_V4L2CONTROLS_H
