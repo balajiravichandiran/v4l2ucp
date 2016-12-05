@@ -132,9 +132,11 @@ void MainWindow::add_control(const struct v4l2_queryctrl &ctrl, int fd)
 
   // TODO(lucasw) clear out all other params under controls first
   // a previous run would leave leftovers
-  ros::param::set("controls/" + name, name_ss.str());
-  ros::param::set("controls/" + name + "_min", ctrl.minimum);
-  ros::param::set("controls/" + name + "_max", ctrl.maximum);
+  ros::param::set("controls/" + name + "/name", name_ss.str());
+  ros::param::set("controls/" + name + "/topic", "controls/" + name);
+  ros::param::set("controls/" + name + "/min", ctrl.minimum);
+  ros::param::set("controls/" + name + "/max", ctrl.maximum);
+  ros::param::set("controls/" + name + "/default", ctrl.minimum);
 
   if (ctrl.flags & V4L2_CTRL_FLAG_DISABLED)
     return;
@@ -143,36 +145,36 @@ void MainWindow::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   switch (ctrl.type)
   {
   case V4L2_CTRL_TYPE_INTEGER:
-    ros::param::set("controls/" + name + "_type", "int");
+    ros::param::set("controls/" + name + "/type", "int");
     integer_controls_[name] = new V4L2IntegerControl(fd, ctrl, this, &pub_[name]);
     sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
         boost::bind(&MainWindow::integerControlCallback, this, _1, name));
     break;
   case V4L2_CTRL_TYPE_BOOLEAN:
-    ros::param::set("controls/" + name + "_type", "bool");
+    ros::param::set("controls/" + name + "/type", "bool");
     bool_controls_[name] = new V4L2BooleanControl(fd, ctrl, this, &pub_[name]);
     sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
         boost::bind(&MainWindow::boolControlCallback, this, _1, name));
     break;
   case V4L2_CTRL_TYPE_MENU:
-    ros::param::set("controls/" + name + "_type", "menu");
+    ros::param::set("controls/" + name + "/type", "menu");
     menu_controls_[name] = new V4L2MenuControl(fd, ctrl, this, &pub_[name]);
     sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
         boost::bind(&MainWindow::menuControlCallback, this, _1, name));
     break;
   case V4L2_CTRL_TYPE_BUTTON:
-    ros::param::set("controls/" + name + "_type", "button");
+    ros::param::set("controls/" + name + "/type", "button");
     button_controls_[name] = new V4L2ButtonControl(fd, ctrl, this, &pub_[name]);
     sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
         boost::bind(&MainWindow::buttonControlCallback, this, _1, name));
     break;
   case V4L2_CTRL_TYPE_INTEGER64:
-    ros::param::set("controls/" + name + "_type", "int64");
+    ros::param::set("controls/" + name + "/type", "int64");
     break;
   case V4L2_CTRL_TYPE_CTRL_CLASS:
-    ros::param::set("controls/" + name + "_type", "ctrl");
+    ros::param::set("controls/" + name + "/type", "ctrl");
   default:
-    ros::param::set("controls/" + name + "_type", static_cast<int>(ctrl.type));
+    ros::param::set("controls/" + name + "/type", static_cast<int>(ctrl.type));
     break;
   }
 
