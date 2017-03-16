@@ -1,4 +1,5 @@
 import os
+import rospkg
 import rospy
 
 from functools import partial
@@ -30,8 +31,8 @@ class MyPlugin(Plugin):
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
-        # in this example the .ui and .py file are in the same folder
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'v4l2ucp.ui')
+        rp = rospkg.RosPack()
+        ui_file = os.path.join(rp.get_path('rqt_v4l2ucp'), 'resource', 'v4l2ucp.ui')
         # Extend the widget with all attributes and children from UI file
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
