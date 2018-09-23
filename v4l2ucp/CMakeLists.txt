@@ -25,7 +25,7 @@ roslint_cpp()
 
 set(V4L2UCP_VERSION 2.0.2)
 add_definitions(-Wall -DV4L2UCP_VERSION="${V4L2UCP_VERSION}")
-find_package(Qt4 REQUIRED)
+find_package(Qt5Widgets REQUIRED)
 
 find_library(V4L2_LIBRARY v4l2)
 if (V4L2_LIBRARY)
