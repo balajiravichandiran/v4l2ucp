@@ -20,12 +20,24 @@
 
  */
 #include <map>
-#include <ros/ros.h>
-#include <std_msgs/Int32.h>
+#include <rclccpp/rclcpp.hpp>
+#include <std_msgs/msg/int32.h>
 #include <string>
 #include <v4l2ucp/v4l2controls.h>
 
-class MainWindow
+#define ROS_INFO(msg, ...) printf(msg,  ##__VA_ARGS__)
+#define ROS_ERROR(msg, ...) printf(msg,  ##__VA_ARGS__)
+#define ROS_WARN(msg, ...) printf(msg,  ##__VA_ARGS__)
+#define ROS_DEBUG(msg, ...) printf(msg,  ##__VA_ARGS__)
+// #define ROS_DEBUG(msg, ...) // ##__VA_ARGS__
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+#define INFO(msg) std::cout << "I [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
+#define WARN(msg) std::cout << "W [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
+#define ERROR(msg) std::cerr << "E [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << std::endl
+#define ROS_ERROR_STREAM(msg) ERROR(msg)
+
+class MainWindow : public rclcpp::Node
 {
 public:
   MainWindow();
@@ -35,12 +47,10 @@ public:
 
 private:
   int fd;
-  // QTimer timer;
-  ros::NodeHandle nh_;
-  std::map<std::string, ros::Subscriber> sub_;
-  std::map<std::string, ros::Publisher> pub_;
+  std::map<std::string, rclcpp::Subscriber<sensor_msgs::msg::Int32::SharedPtr> sub_;
+  std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::Int32::SharedPtr> pub_;
 
-  ros::Publisher configured_pub_;
+  rclcpp::Publisher configured_pub_;
 
   std::map<std::string, V4L2IntegerControl*> integer_controls_;
   std::map<std::string, V4L2BooleanControl*> bool_controls_;
@@ -49,10 +59,10 @@ private:
 
   void add_control(const struct v4l2_queryctrl &ctrl, int fd);
 
-  void integerControlCallback(const std_msgs::Int32::ConstPtr& msg, std::string name);
-  void boolControlCallback(const std_msgs::Int32::ConstPtr& msg, std::string name);
-  void menuControlCallback(const std_msgs::Int32::ConstPtr& msg, std::string name);
-  void buttonControlCallback(const std_msgs::Int32::ConstPtr& msg, std::string name);
+  void integerControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
+  void boolControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
+  void menuControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
+  void buttonControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
 };
 
 #endif  // V4L2UCP_MAINWINDOW_H

@@ -20,13 +20,21 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include "v4l2ucp/mainWindow.h"
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "v4l2ucp");
-  MainWindow main_window;
-  ros::spin();
+  rclcpp::init(argc, argv);
+
+  // Force flush of the stdout buffer.
+  // This ensures a correct sync of all prints
+  // even when executed simultaneously within a launch file.
+  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+  auto main_window = std::make_shared<MainWindow>();
+  rclcpp::spin(main_window);
+  INFO("node done");
+  rclcpp::shutdown();
+  return 0;
 }

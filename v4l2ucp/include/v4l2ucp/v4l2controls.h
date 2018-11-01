@@ -22,7 +22,8 @@
 #include <sys/time.h>
 #include <linux/types.h>          /* for videodev2.h */
 #include <linux/videodev2.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/Int32.hpp>
 
 #ifndef V4L2_CID_IRIS_ABSOLUTE
 #define V4L2_CID_IRIS_ABSOLUTE      (V4L2_CID_CAMERA_CLASS_BASE+17)
@@ -47,12 +48,12 @@ public:
 
 protected:
   V4L2Control(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
   int fd;
   int cid;
   int default_value;
   char name[32];
-  ros::Publisher* pub_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
 
 private:
   MainWindow *mw;
@@ -76,7 +77,7 @@ class V4L2IntegerControl : public V4L2Control
 {
 public:
   V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 
   void setValue(int val);
 
@@ -90,14 +91,14 @@ class V4L2BooleanControl : public V4L2Control
 {
 public:
   V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 };
 
 class V4L2MenuControl : public V4L2Control
 {
 public:
   V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 };
 
 class V4L2ButtonControl : public V4L2Control
@@ -106,7 +107,7 @@ public:
   // void resetToDefault();
 
   V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 };
 
 #endif  // V4L2UCP_V4L2CONTROLS_H
