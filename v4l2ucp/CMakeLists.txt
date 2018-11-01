@@ -39,7 +39,6 @@ target_link_libraries(v4l2ctrl
 ament_target_dependencies(${PROJECT_NAME}
   "builtin_interfaces"
   "rclcpp"
-  "sensor_msgs"
   "std_msgs"
   "std_srvs"
 )

@@ -23,7 +23,7 @@
 #include <linux/types.h>          /* for videodev2.h */
 #include <linux/videodev2.h>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/Int32.hpp>
+#include <std_msgs/msg/int32.hpp>
 
 #ifndef V4L2_CID_IRIS_ABSOLUTE
 #define V4L2_CID_IRIS_ABSOLUTE      (V4L2_CID_CAMERA_CLASS_BASE+17)
@@ -56,6 +56,7 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
 
 private:
+  // TODO(lucasw) get rid of this
   MainWindow *mw;
 
   int value_;

@@ -20,8 +20,9 @@
 
  */
 #include <map>
-#include <rclccpp/rclcpp.hpp>
-#include <std_msgs/msg/int32.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/empty.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <string>
 #include <v4l2ucp/v4l2controls.h>
 
@@ -35,6 +36,8 @@
 #define INFO(msg) std::cout << "I [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
 #define WARN(msg) std::cout << "W [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
 #define ERROR(msg) std::cerr << "E [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << std::endl
+#define DEBUG(msg) // std::cerr << "E [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << std::endl
+#define ROS_ERROR_STREAM(msg) ERROR(msg)
 #define ROS_ERROR_STREAM(msg) ERROR(msg)
 
 class MainWindow : public rclcpp::Node
@@ -46,11 +49,13 @@ public:
   void about();
 
 private:
-  int fd;
-  std::map<std::string, rclcpp::Subscriber<sensor_msgs::msg::Int32::SharedPtr> sub_;
-  std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::Int32::SharedPtr> pub_;
+  int fd = -1;
 
-  rclcpp::Publisher configured_pub_;
+  // TODO(lucasw) instead of subscribers just have a get/set service
+  std::map<std::string, rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr> sub_;
+  std::map<std::string, rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr> pub_;
+
+  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr configured_pub_;
 
   std::map<std::string, V4L2IntegerControl*> integer_controls_;
   std::map<std::string, V4L2BooleanControl*> bool_controls_;

@@ -21,7 +21,7 @@
 #include <cerrno>
 #include <cstring>
 #include <libv4l2.h>
-#include <std_msgs/Int32.h>
+#include <std_msgs/msg/int32.hpp>
 
 #include "v4l2ucp/mainWindow.h"
 #include "v4l2ucp/v4l2controls.h"
@@ -33,7 +33,7 @@ int V4L2Control::whitebalance_auto = 0;
 
 V4L2Control::V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
                          MainWindow *mw,
-                         ros::Publisher* pub) :
+                         rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
   cid(ctrl.id),
   default_value(ctrl.default_value),
   pub_(pub),
@@ -132,7 +132,7 @@ void V4L2Control::updateHardware()
   c.value = getValue();
   if (v4l2_ioctl(fd, VIDIOC_S_CTRL, &c) == -1)
   {
-    ROS_ERROR_STREAM(name << " Unable to set control " << strerror(errno));
+    ERROR(name << " Unable to set control " << strerror(errno));
     updateStatus(false);
   }
   else
@@ -145,7 +145,7 @@ void V4L2Control::updateStatus(bool hwChanged)
   ctrl.id = cid;
   if (v4l2_ioctl(fd, VIDIOC_QUERYCTRL, &ctrl) == -1)
   {
-    ROS_ERROR_STREAM("Unable to get control status " << strerror(errno));
+    ERROR("Unable to get control status " << strerror(errno));
   }
   else
   {
@@ -167,18 +167,18 @@ void V4L2Control::updateStatus(bool hwChanged)
   c.id = cid;
   if (v4l2_ioctl(fd, VIDIOC_G_CTRL, &c) == -1)
   {
-    ROS_ERROR_STREAM(name << " Unable to get control " << strerror(errno));
+    ERROR(name << " Unable to get control " << strerror(errno));
   }
   else
   {
     cacheValue(c);
-    std_msgs::Int32 msg;
+    std_msgs::msg::Int32 msg;
     msg.data = c.value;
     // TODO(lucasw) need to query hardware periodically to check on true values
     pub_->publish(msg);
     if (c.value != getValue())
     {
-      // ROS_INFO_STREAM(name << " setting value from cache " << getValue() << " to " << c.value);
+      // INFO(name << " setting value from cache " << getValue() << " to " << c.value);
       // setValue(c.value);
     }
   }
@@ -195,7 +195,7 @@ void V4L2Control::resetToDefault()
 V4L2IntegerControl::V4L2IntegerControl
 (int fd, const struct v4l2_queryctrl &ctrl,
     MainWindow *mw,
-                         ros::Publisher* pub) :
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
   V4L2Control(fd, ctrl, mw, pub),
   minimum(ctrl.minimum), maximum(ctrl.maximum), step(ctrl.step)
 {
@@ -222,7 +222,7 @@ V4L2IntegerControl::V4L2IntegerControl
 
 void V4L2IntegerControl::setValue(int val)
 {
-  ROS_DEBUG_STREAM(name << " " << val);
+  DEBUG(name << " " << val);
   if (val < minimum)
     val = minimum;
   if (val > maximum)
@@ -247,7 +247,7 @@ void V4L2IntegerControl::setValue(int val)
  */
 V4L2BooleanControl::V4L2BooleanControl
 (int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-                         ros::Publisher* pub) :
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
   V4L2Control(fd, ctrl, mw, pub)
 {
   updateStatus();
@@ -258,7 +258,7 @@ V4L2BooleanControl::V4L2BooleanControl
  */
 V4L2MenuControl::V4L2MenuControl
 (int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-                         ros::Publisher* pub) :
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
   V4L2Control(fd, ctrl, mw, pub)
 {
   for (int i = ctrl.minimum; i <= ctrl.maximum; i++)
@@ -268,13 +268,13 @@ V4L2MenuControl::V4L2MenuControl
     qm.index = i;
     if (v4l2_ioctl(fd, VIDIOC_QUERYMENU, &qm) == 0)
     {
-      ROS_INFO_STREAM(name << " " << qm.name);
+      INFO(name << " " << qm.name);
       // cb->insertItem(i, (const char *)qm.name);
       // TODO(lucasw) add menu item to ros params
     }
     else
     {
-      ROS_ERROR_STREAM(name << " Unable to get menu item" << qm.index);
+      ERROR(name << " Unable to get menu item" << qm.index);
       // cb->insertItem(i, "Unknown");
     }
   }
@@ -287,7 +287,7 @@ V4L2MenuControl::V4L2MenuControl
  */
 V4L2ButtonControl::V4L2ButtonControl
 (int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-                         ros::Publisher* pub) :
+      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
   V4L2Control(fd, ctrl, mw, pub)
 {
   updateStatus();

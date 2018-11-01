@@ -23,15 +23,16 @@
 #include <fcntl.h>
 #include <functional>
 #include <libv4l2.h>
-#include <ros/ros.h>
-#include <std_msgs/Empty.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/empty.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <string>
 #include <sys/ioctl.h>
 
 #include "v4l2ucp/mainWindow.h"
+using std::placeholders::_1;
 
 MainWindow::MainWindow() : Node("v4l2ucp")
-  fd(-1)
 {
   std::string device = "/dev/video0";
   get_parameter_or("~device", device, device);
@@ -39,7 +40,7 @@ MainWindow::MainWindow() : Node("v4l2ucp")
   fd = v4l2_open(device.c_str(), O_RDWR, 0);
   if (fd < 0)
   {
-    ROS_ERROR_STREAM("v4l2ucp: Unable to open file" << device << " "
+    ERROR("v4l2ucp: Unable to open file" << device << " "
         << strerror(errno));
     return;
   }
@@ -47,20 +48,20 @@ MainWindow::MainWindow() : Node("v4l2ucp")
   struct v4l2_capability cap;
   if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap) == -1)
   {
-    ROS_ERROR_STREAM("v4l2ucp: Not a V4L2 device" << device);
+    ERROR("v4l2ucp: Not a V4L2 device" << device);
     return;
   }
 
-  ROS_INFO_STREAM(cap.driver);
-  ROS_INFO_STREAM(cap.card);
-  ROS_INFO_STREAM(cap.bus_info);
+  INFO(cap.driver);
+  INFO(cap.card);
+  INFO(cap.bus_info);
 
-  ROS_INFO_STREAM((cap.version >> 16) << "." << ((cap.version >> 8) & 0xff) << "."
+  INFO((cap.version >> 16) << "." << ((cap.version >> 8) & 0xff) << "."
               << (cap.version & 0xff));
 
-  ROS_INFO_STREAM("0x" << std::hex << cap.capabilities);
+  INFO("0x" << std::hex << cap.capabilities);
 
-  configured_pub_ = nh_.advertise<std_msgs::Empty>("configured", 1, true);
+  configured_pub_ = create_publisher<std_msgs::msg::Empty>("configured");
 
   struct v4l2_queryctrl ctrl;
 #ifdef V4L2_CTRL_FLAG_NEXT_CTRL
@@ -103,7 +104,7 @@ MainWindow::MainWindow() : Node("v4l2ucp")
       }
     }
   }
-  configured_pub_.publish(std_msgs::Empty());
+  configured_pub_->publish(std_msgs::msg::Empty());
 }
 
 MainWindow::~MainWindow()
@@ -141,43 +142,46 @@ void MainWindow::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   if (ctrl.flags & V4L2_CTRL_FLAG_DISABLED)
     return;
 
-  pub_[name] = nh_.advertise<std_msgs::Int32>("feedback/" + name, 1, true);
+  std::function<void(std::shared_ptr<std_msgs::msg::Int32>)> fnc;
+  pub_[name] = create_publisher<std_msgs::msg::Int32>("feedback/" + name);
   switch (ctrl.type)
   {
   case V4L2_CTRL_TYPE_INTEGER:
     set_parameter_if_not_set("controls/" + name + "/type", "int");
-    integer_controls_[name] = new V4L2IntegerControl(fd, ctrl, this, &pub_[name]);
-    sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
-        boost::bind(&MainWindow::integerControlCallback, this, _1, name));
+    integer_controls_[name] = new V4L2IntegerControl(fd, ctrl, this, pub_[name]);
+    fnc = std::bind(&MainWindow::integerControlCallback, this, _1, name);
+    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
     break;
   case V4L2_CTRL_TYPE_BOOLEAN:
     set_parameter_if_not_set("controls/" + name + "/type", "bool");
-    bool_controls_[name] = new V4L2BooleanControl(fd, ctrl, this, &pub_[name]);
-    sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
-        boost::bind(&MainWindow::boolControlCallback, this, _1, name));
+    bool_controls_[name] = new V4L2BooleanControl(fd, ctrl, this, pub_[name]);
+    fnc = std::bind(&MainWindow::boolControlCallback, this, _1, name);
+    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
     break;
   case V4L2_CTRL_TYPE_MENU:
     set_parameter_if_not_set("controls/" + name + "/type", "menu");
-    menu_controls_[name] = new V4L2MenuControl(fd, ctrl, this, &pub_[name]);
-    sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
-        boost::bind(&MainWindow::menuControlCallback, this, _1, name));
+    menu_controls_[name] = new V4L2MenuControl(fd, ctrl, this, pub_[name]);
+    fnc = std::bind(&MainWindow::menuControlCallback, this, _1, name);
+    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
     break;
   case V4L2_CTRL_TYPE_BUTTON:
     set_parameter_if_not_set("controls/" + name + "/type", "button");
-    button_controls_[name] = new V4L2ButtonControl(fd, ctrl, this, &pub_[name]);
-    sub_[name] = nh_.subscribe<std_msgs::Int32>("controls/" + name, 10,
-        boost::bind(&MainWindow::buttonControlCallback, this, _1, name));
+    button_controls_[name] = new V4L2ButtonControl(fd, ctrl, this, pub_[name]);
+    fnc = std::bind(&MainWindow::buttonControlCallback, this, _1, name);
+    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
     break;
   case V4L2_CTRL_TYPE_INTEGER64:
+    WARN("integer64 type not yet implemented");
     set_parameter_if_not_set("controls/" + name + "/type", "int64");
     break;
   case V4L2_CTRL_TYPE_CTRL_CLASS:
+    WARN("ctrl type not yet implemented");
     set_parameter_if_not_set("controls/" + name + "/type", "ctrl");
   default:
+    WARN("unknown type not yet implemented " << ctrl.type);
     set_parameter_if_not_set("controls/" + name + "/type", static_cast<int>(ctrl.type));
     break;
   }
-
 
   #if 0
   if (!w)
@@ -210,28 +214,28 @@ void MainWindow::add_control(const struct v4l2_queryctrl &ctrl, int fd)
 }
 
 void MainWindow::integerControlCallback(
-    const std_msgs::Int32::ConstPtr& msg, std::string name)
+    const std_msgs::msg::Int32::SharedPtr msg, std::string name)
 {
   // The ui is overriding this control immediately after it is set
   // need to set the slider to this value.
-  // ROS_INFO_STREAM("integer " << name << " " << msg->data);
+  // INFO("integer " << name << " " << msg->data);
   integer_controls_[name]->setValue(msg->data);
 }
 
 void MainWindow::boolControlCallback(
-    const std_msgs::Int32::ConstPtr& msg, std::string name)
+    const std_msgs::msg::Int32::SharedPtr msg, std::string name)
 {
   bool_controls_[name]->setValue(msg->data);
 }
 
 void MainWindow::menuControlCallback(
-    const std_msgs::Int32::ConstPtr& msg, std::string name)
+    const std_msgs::msg::Int32::SharedPtr msg, std::string name)
 {
   menu_controls_[name]->setValue(msg->data);
 }
 
 void MainWindow::buttonControlCallback(
-    const std_msgs::Int32::ConstPtr& msg, std::string name)
+    const std_msgs::msg::Int32::SharedPtr msg, std::string name)
 {
   // TODO(lucasw) this doesn't do anything
   button_controls_[name]->setValue(msg->data);
@@ -257,5 +261,5 @@ void MainWindow::about()
                      "along with this program; if not, write to the Free Software\n"
                      "Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\n";
 
-  // ROS_INFO_STREAM("v4l2ucp Version " << V4L2UCP_VERSION << about);
+  // INFO("v4l2ucp Version " << V4L2UCP_VERSION << about);
 }
