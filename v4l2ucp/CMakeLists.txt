@@ -22,7 +22,7 @@ include_directories(
 )
 
 add_executable(v4l2ucp
-  src/mainWindow.cpp
+  src/main.cpp
   src/v4l2controls.cpp
   src/v4l2ucp.cpp
 )

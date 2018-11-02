@@ -47,7 +47,7 @@ public:
   virtual int getValue() { return value_; }
 
 protected:
-  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
   int fd;
   int cid;
@@ -56,8 +56,6 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
 
 private:
-  // TODO(lucasw) get rid of this
-  MainWindow *mw;
 
   int value_;
 
@@ -77,7 +75,7 @@ private:
 class V4L2IntegerControl : public V4L2Control
 {
 public:
-  V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+  V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 
   void setValue(int val);
@@ -91,14 +89,14 @@ private:
 class V4L2BooleanControl : public V4L2Control
 {
 public:
-  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 };
 
 class V4L2MenuControl : public V4L2Control
 {
 public:
-  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 };
 
@@ -107,7 +105,7 @@ class V4L2ButtonControl : public V4L2Control
 public:
   // void resetToDefault();
 
-  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
 };
 

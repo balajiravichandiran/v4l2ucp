@@ -1,5 +1,5 @@
-#ifndef V4L2UCP_MAINWINDOW_H
-#define V4L2UCP_MAINWINDOW_H
+#ifndef V4L2UCP_V4L2UCP_H
+#define V4L2UCP_V4L2UCP_H
 /*  v4l2ucp - A universal control panel for all V4L2 devices
     Copyright (C) 2005 Scott J. Bertin (scottbertin@yahoo.com)
     Copyright (C) 2009 Vasily Khoruzhick (anarsoul@gmail.com)
@@ -40,11 +40,11 @@
 #define ROS_ERROR_STREAM(msg) ERROR(msg)
 #define ROS_ERROR_STREAM(msg) ERROR(msg)
 
-class MainWindow : public rclcpp::Node
+class V4l2Ucp : public rclcpp::Node
 {
 public:
-  MainWindow();
-  ~MainWindow();
+  V4l2Ucp();
+  ~V4l2Ucp();
 
   void about();
 
@@ -70,4 +70,4 @@ private:
   void buttonControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
 };
 
-#endif  // V4L2UCP_MAINWINDOW_H
+#endif  // V4L2UCP_V4L2UCP_H

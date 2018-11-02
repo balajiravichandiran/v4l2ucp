@@ -23,8 +23,8 @@
 #include <libv4l2.h>
 #include <std_msgs/msg/int32.hpp>
 
-#include "v4l2ucp/mainWindow.h"
 #include "v4l2ucp/v4l2controls.h"
+#include "v4l2ucp/v4l2ucp.h"
 
 int V4L2Control::exposure_auto = V4L2_EXPOSURE_MANUAL;
 int V4L2Control::focus_auto = 0;
@@ -32,12 +32,10 @@ int V4L2Control::hue_auto = 0;
 int V4L2Control::whitebalance_auto = 0;
 
 V4L2Control::V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
-                         MainWindow *mw,
                          rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
   cid(ctrl.id),
   default_value(ctrl.default_value),
-  pub_(pub),
-  mw(mw)
+  pub_(pub)
 {
   this->fd = fd;
   strncpy(name, (const char *)ctrl.name, sizeof(name));
@@ -194,9 +192,8 @@ void V4L2Control::resetToDefault()
  */
 V4L2IntegerControl::V4L2IntegerControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-    MainWindow *mw,
     rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, mw, pub),
+  V4L2Control(fd, ctrl, pub),
   minimum(ctrl.minimum), maximum(ctrl.maximum), step(ctrl.step)
 {
   #if 0
@@ -246,9 +243,9 @@ void V4L2IntegerControl::setValue(int val)
  * V4L2BooleanControl
  */
 V4L2BooleanControl::V4L2BooleanControl
-(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, mw, pub)
+  V4L2Control(fd, ctrl, pub)
 {
   updateStatus();
 }
@@ -257,9 +254,9 @@ V4L2BooleanControl::V4L2BooleanControl
  * V4L2MenuControl
  */
 V4L2MenuControl::V4L2MenuControl
-(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, mw, pub)
+  V4L2Control(fd, ctrl, pub)
 {
   for (int i = ctrl.minimum; i <= ctrl.maximum; i++)
   {
@@ -286,9 +283,9 @@ V4L2MenuControl::V4L2MenuControl
  * V4L2ButtonControl
  */
 V4L2ButtonControl::V4L2ButtonControl
-(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
+(int fd, const struct v4l2_queryctrl &ctrl,
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, mw, pub)
+  V4L2Control(fd, ctrl, pub)
 {
   updateStatus();
 }
