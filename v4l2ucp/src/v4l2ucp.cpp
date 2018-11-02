@@ -31,6 +31,7 @@
 
 #include "v4l2ucp/v4l2ucp.h"
 using std::placeholders::_1;
+using std::placeholders::_2;
 
 V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
 {
@@ -104,7 +105,13 @@ V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
       }
     }
   }
-  configured_pub_->publish(std_msgs::msg::Empty());
+  set_control_ = create_service<v4l2ucp::srv::SetControl>("set_control",
+      std::bind(&V4l2Ucp::setControl, this, _1, _2));
+  get_control_ = create_service<v4l2ucp::srv::SetControl>("get_control",
+      std::bind(&V4l2Ucp::getControl, this, _1, _2));
+  //  list_controls_ = create_service<v4l2ucp::srv::SetControl>("list_controls",
+  //    std::bind(&V4l2Ucp::listControl, this, _1, _2));
+  // configured_pub_->publish(std_msgs::msg::Empty());
 }
 
 V4l2Ucp::~V4l2Ucp()
@@ -112,6 +119,44 @@ V4l2Ucp::~V4l2Ucp()
   if (fd >= 0)
     v4l2_close(fd);
 }
+
+void V4l2Ucp::setControl(const std::shared_ptr<v4l2ucp::srv::SetControl::Request> req,
+    std::shared_ptr<v4l2ucp::srv::SetControl::Response> res)
+{
+  const std::string name = req->control.name;
+  if (controls_.count(name) < 1)
+  {
+    // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
+    res->message = "No " + name + " in controls";
+    res->success = false;
+    return;
+  }
+  controls_[name]->setValue(req->control.value);
+  res->control = controls_[name]->msg_;
+}
+
+void V4l2Ucp::getControl(const std::shared_ptr<v4l2ucp::srv::SetControl::Request> req,
+    std::shared_ptr<v4l2ucp::srv::SetControl::Response> res)
+{
+  const std::string name = req->control.name;
+  if (controls_.count(name) < 1)
+  {
+    // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
+    res->message = "No " + name + " in controls";
+    res->success = false;
+    return;
+  }
+  controls_[name]->updateValue();
+  res->control = controls_[name]->msg_;
+}
+
+#if 0
+void V4l2Ucp::listControls(const std::shared_ptr<v4l2ucp::srv::SetControl::Request> req,
+    std::shared_ptr<v4l2ucp::srv::SetControl::Response> res)
+{
+
+}
+#endif
 
 bool not_alnum(char s)
 {
@@ -131,6 +176,7 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   name.erase(std::remove_if(name.begin(), name.end(),
       (int(*)(int))not_alnum), name.end());
 
+#if 0
   // TODO(lucasw) clear out all other params under controls first
   // a previous run would leave leftovers
   set_parameter_if_not_set("controls/" + name + "/name", name_ss.str());
@@ -138,37 +184,46 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   set_parameter_if_not_set("controls/" + name + "/min", ctrl.minimum);
   set_parameter_if_not_set("controls/" + name + "/max", ctrl.maximum);
   set_parameter_if_not_set("controls/" + name + "/default", ctrl.minimum);
-
+#endif
   if (ctrl.flags & V4L2_CTRL_FLAG_DISABLED)
     return;
-
+#if 0
   std::function<void(std::shared_ptr<std_msgs::msg::Int32>)> fnc;
   pub_[name] = create_publisher<std_msgs::msg::Int32>("feedback/" + name);
+#endif
   switch (ctrl.type)
   {
   case V4L2_CTRL_TYPE_INTEGER:
+    controls_[name].reset(new V4L2IntegerControl(fd, ctrl, name));
+#if 0
     set_parameter_if_not_set("controls/" + name + "/type", "int");
-    integer_controls_[name] = new V4L2IntegerControl(fd, ctrl, pub_[name]);
     fnc = std::bind(&V4l2Ucp::integerControlCallback, this, _1, name);
     sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
+#endif
     break;
   case V4L2_CTRL_TYPE_BOOLEAN:
+    controls_[name].reset(new V4L2BooleanControl(fd, ctrl, name));
+#if 0
     set_parameter_if_not_set("controls/" + name + "/type", "bool");
-    bool_controls_[name] = new V4L2BooleanControl(fd, ctrl, pub_[name]);
     fnc = std::bind(&V4l2Ucp::boolControlCallback, this, _1, name);
     sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
+#endif
     break;
   case V4L2_CTRL_TYPE_MENU:
+    controls_[name].reset(new V4L2MenuControl(fd, ctrl, name));
+#if 0
     set_parameter_if_not_set("controls/" + name + "/type", "menu");
-    menu_controls_[name] = new V4L2MenuControl(fd, ctrl, pub_[name]);
     fnc = std::bind(&V4l2Ucp::menuControlCallback, this, _1, name);
     sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
+#endif
     break;
   case V4L2_CTRL_TYPE_BUTTON:
+    controls_[name].reset(new V4L2ButtonControl(fd, ctrl, name));
+#if 0
     set_parameter_if_not_set("controls/" + name + "/type", "button");
-    button_controls_[name] = new V4L2ButtonControl(fd, ctrl, pub_[name]);
     fnc = std::bind(&V4l2Ucp::buttonControlCallback, this, _1, name);
     sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
+#endif
     break;
   case V4L2_CTRL_TYPE_INTEGER64:
     WARN("integer64 type not yet implemented");
@@ -213,6 +268,7 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   // TODO(lucasw) have a ros timer that updates the values from hardware
 }
 
+#if 0
 void V4l2Ucp::integerControlCallback(
     const std_msgs::msg::Int32::SharedPtr msg, std::string name)
 {
@@ -240,6 +296,7 @@ void V4l2Ucp::buttonControlCallback(
   // TODO(lucasw) this doesn't do anything
   button_controls_[name]->setValue(msg->data);
 }
+#endif
 
 void V4l2Ucp::about()
 {

@@ -1,0 +1,5 @@
+v4l2ucp/Control control
+---
+bool success
+string message
+v4l2ucp/Control control

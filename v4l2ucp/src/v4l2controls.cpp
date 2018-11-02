@@ -31,15 +31,23 @@ int V4L2Control::focus_auto = 0;
 int V4L2Control::hue_auto = 0;
 int V4L2Control::whitebalance_auto = 0;
 
-V4L2Control::V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
-                         rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
+V4L2Control::V4L2Control(const int fd, const struct v4l2_queryctrl &ctrl,
+    const std::string name) :
+//                         rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
+  fd(fd),
   cid(ctrl.id),
+  ctrl_(ctrl),
   default_value(ctrl.default_value),
-  pub_(pub)
+  // pub_(pub),
+  name_(name)
 {
-  this->fd = fd;
-  strncpy(name, (const char *)ctrl.name, sizeof(name));
-  name[sizeof(name) - 1] = '\0';
+  msg_.name = name_;
+  msg_.type = ctrl.type;
+  msg_.value = default_value;
+  msg_.min = ctrl.minimum;
+  msg_.max = ctrl.maximum;
+  INFO("'" << name << "' (from '" << ctrl.name << "') " << std::dec << msg_.type << " "
+      << msg_.min << " " << msg_.max);
 }
 
 void V4L2Control::cacheValue(const struct v4l2_control &c)
@@ -123,21 +131,24 @@ void V4L2Control::queryCleanup(struct v4l2_queryctrl *ctrl)
   }
 }
 
-void V4L2Control::updateHardware()
+void V4L2Control::setValue(int value)
 {
   struct v4l2_control c;
   c.id = cid;
-  c.value = getValue();
+  c.value = value;
   if (v4l2_ioctl(fd, VIDIOC_S_CTRL, &c) == -1)
   {
-    ERROR(name << " Unable to set control " << strerror(errno));
-    updateStatus(false);
+    ERROR(name_ << " Unable to set control " << strerror(errno));
+    updateValue(false);
   }
   else
-    updateStatus(true);
+  {
+    value_ = value;
+    updateValue(true);
+  }
 }
 
-void V4L2Control::updateStatus(bool hwChanged)
+void V4L2Control::updateValue(bool hwChanged)
 {
   struct v4l2_queryctrl ctrl = { 0 };
   ctrl.id = cid;
@@ -165,19 +176,20 @@ void V4L2Control::updateStatus(bool hwChanged)
   c.id = cid;
   if (v4l2_ioctl(fd, VIDIOC_G_CTRL, &c) == -1)
   {
-    ERROR(name << " Unable to get control " << strerror(errno));
+    ERROR(name_ << " Unable to get control " << strerror(errno));
   }
   else
   {
     cacheValue(c);
-    std_msgs::msg::Int32 msg;
-    msg.data = c.value;
+    value_ = c.value;
+    msg_.value = c.value;
     // TODO(lucasw) need to query hardware periodically to check on true values
-    pub_->publish(msg);
+    // std_msgs::msg::Int32 msg;
+    // msg.data = c.value;
+    // pub_->publish(msg);
     if (c.value != getValue())
     {
-      // INFO(name << " setting value from cache " << getValue() << " to " << c.value);
-      // setValue(c.value);
+      // INFO(name_ << " setting value from cache " << getValue() << " to " << c.value);
     }
   }
 }
@@ -192,8 +204,8 @@ void V4L2Control::resetToDefault()
  */
 V4L2IntegerControl::V4L2IntegerControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, pub),
+    const std::string name) :
+  V4L2Control(fd, ctrl, name),
   minimum(ctrl.minimum), maximum(ctrl.maximum), step(ctrl.step)
 {
   #if 0
@@ -214,12 +226,12 @@ V4L2IntegerControl::V4L2IntegerControl
   le->setValidator(new QIntValidator(minimum, maximum, this));
   #endif
 
-  updateStatus();
+  updateValue();
 }
 
 void V4L2IntegerControl::setValue(int val)
 {
-  DEBUG(name << " " << val);
+  DEBUG(name_ << " " << val);
   if (val < minimum)
     val = minimum;
   if (val > maximum)
@@ -244,10 +256,10 @@ void V4L2IntegerControl::setValue(int val)
  */
 V4L2BooleanControl::V4L2BooleanControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, pub)
+    const std::string name) :
+  V4L2Control(fd, ctrl, name)
 {
-  updateStatus();
+  updateValue();
 }
 
 /*
@@ -255,8 +267,8 @@ V4L2BooleanControl::V4L2BooleanControl
  */
 V4L2MenuControl::V4L2MenuControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, pub)
+    const std::string name) :
+  V4L2Control(fd, ctrl, name)
 {
   for (int i = ctrl.minimum; i <= ctrl.maximum; i++)
   {
@@ -265,18 +277,18 @@ V4L2MenuControl::V4L2MenuControl
     qm.index = i;
     if (v4l2_ioctl(fd, VIDIOC_QUERYMENU, &qm) == 0)
     {
-      INFO(name << " " << qm.name);
+      INFO(name_ << " " << qm.name);
       // cb->insertItem(i, (const char *)qm.name);
       // TODO(lucasw) add menu item to ros params
     }
     else
     {
-      ERROR(name << " Unable to get menu item" << qm.index);
+      ERROR(name_ << " Unable to get menu item" << qm.index);
       // cb->insertItem(i, "Unknown");
     }
   }
   // cb->setCurrentIndex(default_value);
-  updateStatus();
+  updateValue();
 }
 
 /*
@@ -284,10 +296,10 @@ V4L2MenuControl::V4L2MenuControl
  */
 V4L2ButtonControl::V4L2ButtonControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
-  V4L2Control(fd, ctrl, pub)
+    const std::string name) :
+  V4L2Control(fd, ctrl, name)
 {
-  updateStatus();
+  updateValue();
 }
 
 // TODO(lucasw) maybe button isn't supposed to reset to default?

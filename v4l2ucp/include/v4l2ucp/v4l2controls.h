@@ -24,6 +24,7 @@
 #include <linux/videodev2.h>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
+#include <v4l2ucp/msg/control.hpp>
 
 #ifndef V4L2_CID_IRIS_ABSOLUTE
 #define V4L2_CID_IRIS_ABSOLUTE      (V4L2_CID_CAMERA_CLASS_BASE+17)
@@ -35,29 +36,29 @@ class MainWindow;
 class V4L2Control
 {
 public:
-  void updateHardware();
-  virtual void updateStatus(bool hwChanged = false);
+  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
+      const std::string name);
+      // rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
+  // this reads the value from hardware
+  virtual void updateValue(bool hwChanged = false);
   virtual void resetToDefault();
-  virtual void setValue(int val)
-  {
-    value_ = val;
-    updateHardware();
-  }
+  // this sets it in hardward
+  virtual void setValue(int value);
+
+  v4l2ucp::msg::Control msg_;
 
   virtual int getValue() { return value_; }
 
 protected:
-  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
   int fd;
   int cid;
+  v4l2_queryctrl ctrl_;
   int default_value;
-  char name[32];
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
+  const std::string name_;
+  int value_;
+  // rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
 
 private:
-
-  int value_;
 
   /* Not pretty we use these to keep track of the value of some special
      ctrls which impact the writability of other ctrls for queryCleanup(). */
@@ -76,9 +77,9 @@ class V4L2IntegerControl : public V4L2Control
 {
 public:
   V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
+      const std::string name);
 
-  void setValue(int val);
+  void setValue(int value);
 
 private:
   int minimum;
@@ -89,15 +90,13 @@ private:
 class V4L2BooleanControl : public V4L2Control
 {
 public:
-  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
+  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl, const std::string name);
 };
 
 class V4L2MenuControl : public V4L2Control
 {
 public:
-  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
+  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl, const std::string name);
 };
 
 class V4L2ButtonControl : public V4L2Control
@@ -105,8 +104,7 @@ class V4L2ButtonControl : public V4L2Control
 public:
   // void resetToDefault();
 
-  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl,
-      rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
+  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, const std::string name);
 };
 
 #endif  // V4L2UCP_V4L2CONTROLS_H
