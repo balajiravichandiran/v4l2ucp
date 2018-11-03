@@ -54,5 +54,7 @@ target_link_libraries(v4l2ctrl
 )
 
 install(TARGETS ${PROJECT_NAME}_node v4l2ctrl DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 ament_package()

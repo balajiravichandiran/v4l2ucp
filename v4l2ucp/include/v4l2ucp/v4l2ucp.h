@@ -35,10 +35,11 @@
 // #define ROS_DEBUG(msg, ...) // ##__VA_ARGS__
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
-#define INFO(msg) std::cout << "I [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
-#define WARN(msg) std::cout << "W [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
-#define ERROR(msg) std::cerr << "E [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << std::endl
-#define DEBUG(msg) // std::cerr << "E [" << __FILENAME__ << ":" << __LINE__ << " " << __FUNCTION__ << "] " << msg << std::endl
+#define PRINT(msg) "[" << __FILENAME__ << ":" << std::dec << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
+#define INFO(msg) std::cout << "I " << PRINT(msg)
+#define WARN(msg) std::cout << "W " << PRINT(msg)
+#define ERROR(msg) std::cerr << "E " << PRINT(msg)
+#define DEBUG(msg) std::cout << "D " << PRINT(msg)
 #define ROS_ERROR_STREAM(msg) ERROR(msg)
 #define ROS_ERROR_STREAM(msg) ERROR(msg)
 
@@ -51,6 +52,7 @@ public:
   V4l2Ucp();
   ~V4l2Ucp();
 
+  bool init();
   void about();
 
 private:
@@ -70,20 +72,6 @@ private:
   void add_control(const struct v4l2_queryctrl &ctrl, int fd);
 
   std::map<std::string, std::shared_ptr<V4L2Control> > controls_;
-#if 0
-  // TODO(lucasw) shared_ptrs for these
-  std::map<std::string, V4L2IntegerControl*> integer_controls_;
-  std::map<std::string, V4L2BooleanControl*> bool_controls_;
-  std::map<std::string, V4L2MenuControl*> menu_controls_;
-  std::map<std::string, V4L2ButtonControl*> button_controls_;
-  // TODO(lucasw) instead of subscribers just have a get/set service
-  std::map<std::string, rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr> sub_;
-  std::map<std::string, rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr> pub_;
-  void integerControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
-  void boolControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
-  void menuControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
-  void buttonControlCallback(const std_msgs::msg::Int32::SharedPtr msg, std::string name);
-#endif
 };
 
 #endif  // V4L2UCP_V4L2UCP_H

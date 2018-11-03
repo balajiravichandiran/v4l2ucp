@@ -35,6 +35,10 @@ using std::placeholders::_2;
 
 V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
 {
+}
+
+bool V4l2Ucp::init()
+{
   std::string device = "/dev/video0";
   get_parameter_or("~device", device, device);
 
@@ -43,14 +47,14 @@ V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
   {
     ERROR("v4l2ucp: Unable to open file" << device << " "
         << strerror(errno));
-    return;
+    return false;
   }
 
   struct v4l2_capability cap;
   if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap) == -1)
   {
     ERROR("v4l2ucp: Not a V4L2 device" << device);
-    return;
+    return false;
   }
 
   INFO(cap.driver);
@@ -62,11 +66,11 @@ V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
 
   INFO("0x" << std::hex << cap.capabilities);
 
-  configured_pub_ = create_publisher<std_msgs::msg::Empty>("configured");
+  // configured_pub_ = create_publisher<std_msgs::msg::Empty>("configured");
 
   struct v4l2_queryctrl ctrl;
 #ifdef V4L2_CTRL_FLAG_NEXT_CTRL
-  /* Try the extended control API first */
+  INFO("Use the extended control API first");
   ctrl.id = V4L2_CTRL_FLAG_NEXT_CTRL;
   if (0 == v4l2_ioctl(fd, VIDIOC_QUERYCTRL, &ctrl))
   {
@@ -80,7 +84,7 @@ V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
   else
 #endif
   {
-    /* Fall back on the standard API */
+    INFO("Fall back on the standard API");
     /* Check all the standard controls */
     for (int i = V4L2_CID_BASE; i < V4L2_CID_LASTP1; i++)
     {
@@ -112,6 +116,7 @@ V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
   //  list_controls_ = create_service<v4l2ucp::srv::SetControl>("list_controls",
   //    std::bind(&V4l2Ucp::listControl, this, _1, _2));
   // configured_pub_->publish(std_msgs::msg::Empty());
+  return true;
 }
 
 V4l2Ucp::~V4l2Ucp()
@@ -163,6 +168,28 @@ bool not_alnum(char s)
   return !std::isalnum(s);
 }
 
+std::string typeToString(const int type)
+{
+  switch (type)
+  {
+  case V4L2_CTRL_TYPE_INTEGER:
+    return "integer";
+  case V4L2_CTRL_TYPE_BOOLEAN:
+    return "boolean";
+  case V4L2_CTRL_TYPE_MENU:
+    return "menu";
+  case V4L2_CTRL_TYPE_BUTTON:
+    return "button";
+  case V4L2_CTRL_TYPE_INTEGER64:
+    return "integer64";
+  case V4L2_CTRL_TYPE_CTRL_CLASS:
+    return "ctrl_class";
+  default:
+    return "unknown type not yet implemented " + std::to_string(type);
+  }
+  return "error";
+}
+
 void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
 {
   std::stringstream name_ss;
@@ -176,7 +203,6 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   name.erase(std::remove_if(name.begin(), name.end(),
       (int(*)(int))not_alnum), name.end());
 
-#if 0
   // TODO(lucasw) clear out all other params under controls first
   // a previous run would leave leftovers
   set_parameter_if_not_set("controls/" + name + "/name", name_ss.str());
@@ -184,57 +210,38 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   set_parameter_if_not_set("controls/" + name + "/min", ctrl.minimum);
   set_parameter_if_not_set("controls/" + name + "/max", ctrl.maximum);
   set_parameter_if_not_set("controls/" + name + "/default", ctrl.minimum);
-#endif
+  set_parameter_if_not_set("controls/" + name + "/type", typeToString(ctrl.type));
+
   if (ctrl.flags & V4L2_CTRL_FLAG_DISABLED)
+  {
+    INFO(name << " disabled");
     return;
-#if 0
-  std::function<void(std::shared_ptr<std_msgs::msg::Int32>)> fnc;
-  pub_[name] = create_publisher<std_msgs::msg::Int32>("feedback/" + name);
-#endif
+  }
   switch (ctrl.type)
   {
   case V4L2_CTRL_TYPE_INTEGER:
-    controls_[name].reset(new V4L2IntegerControl(fd, ctrl, name));
-#if 0
-    set_parameter_if_not_set("controls/" + name + "/type", "int");
-    fnc = std::bind(&V4l2Ucp::integerControlCallback, this, _1, name);
-    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
-#endif
+    controls_[name] = std::make_shared<V4L2IntegerControl>(
+        V4L2IntegerControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_BOOLEAN:
-    controls_[name].reset(new V4L2BooleanControl(fd, ctrl, name));
-#if 0
-    set_parameter_if_not_set("controls/" + name + "/type", "bool");
-    fnc = std::bind(&V4l2Ucp::boolControlCallback, this, _1, name);
-    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
-#endif
+    controls_[name] = std::make_shared<V4L2BooleanControl>(
+        V4L2BooleanControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_MENU:
-    controls_[name].reset(new V4L2MenuControl(fd, ctrl, name));
-#if 0
-    set_parameter_if_not_set("controls/" + name + "/type", "menu");
-    fnc = std::bind(&V4l2Ucp::menuControlCallback, this, _1, name);
-    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
-#endif
+    controls_[name] = std::make_shared<V4L2MenuControl>(
+        V4L2MenuControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_BUTTON:
-    controls_[name].reset(new V4L2ButtonControl(fd, ctrl, name));
-#if 0
-    set_parameter_if_not_set("controls/" + name + "/type", "button");
-    fnc = std::bind(&V4l2Ucp::buttonControlCallback, this, _1, name);
-    sub_[name] = create_subscription<std_msgs::msg::Int32>("controls/" + name, fnc);
-#endif
+    controls_[name] = std::make_shared<V4L2ButtonControl>(
+        V4L2ButtonControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_INTEGER64:
     WARN("integer64 type not yet implemented");
-    set_parameter_if_not_set("controls/" + name + "/type", "int64");
     break;
   case V4L2_CTRL_TYPE_CTRL_CLASS:
     WARN("ctrl type not yet implemented");
-    set_parameter_if_not_set("controls/" + name + "/type", "ctrl");
   default:
     WARN("unknown type not yet implemented " << ctrl.type);
-    set_parameter_if_not_set("controls/" + name + "/type", static_cast<int>(ctrl.type));
     break;
   }
 
@@ -269,15 +276,6 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
 }
 
 #if 0
-void V4l2Ucp::integerControlCallback(
-    const std_msgs::msg::Int32::SharedPtr msg, std::string name)
-{
-  // The ui is overriding this control immediately after it is set
-  // need to set the slider to this value.
-  // INFO("integer " << name << " " << msg->data);
-  integer_controls_[name]->setValue(msg->data);
-}
-
 void V4l2Ucp::boolControlCallback(
     const std_msgs::msg::Int32::SharedPtr msg, std::string name)
 {

@@ -37,8 +37,8 @@ class V4L2Control
 {
 public:
   V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
-      const std::string name);
-      // rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub);
+      const std::string name,
+      std::shared_ptr<rclcpp::Node> node);
   // this reads the value from hardware
   virtual void updateValue(bool hwChanged = false);
   virtual void resetToDefault();
@@ -56,7 +56,10 @@ protected:
   int default_value;
   const std::string name_;
   int value_;
-  // rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_;
+  // virtual
+  void callback(const std_msgs::msg::Int32::SharedPtr msg);
 
 private:
 
@@ -77,26 +80,28 @@ class V4L2IntegerControl : public V4L2Control
 {
 public:
   V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl,
-      const std::string name);
+      const std::string name, std::shared_ptr<rclcpp::Node> node);
 
-  void setValue(int value);
+  // virtual void setValue(int value);
 
 private:
-  int minimum;
-  int maximum;
-  int step;
+  int minimum = 0;
+  int maximum = 1;
+  int step = 0;
 };
 
 class V4L2BooleanControl : public V4L2Control
 {
 public:
-  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl, const std::string name);
+  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl,
+      const std::string name, std::shared_ptr<rclcpp::Node> node);
 };
 
 class V4L2MenuControl : public V4L2Control
 {
 public:
-  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl, const std::string name);
+  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl,
+      const std::string name, std::shared_ptr<rclcpp::Node> node);
 };
 
 class V4L2ButtonControl : public V4L2Control
@@ -104,7 +109,8 @@ class V4L2ButtonControl : public V4L2Control
 public:
   // void resetToDefault();
 
-  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, const std::string name);
+  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl,
+      const std::string name, std::shared_ptr<rclcpp::Node> node);
 };
 
 #endif  // V4L2UCP_V4L2CONTROLS_H

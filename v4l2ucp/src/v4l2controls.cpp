@@ -26,19 +26,19 @@
 #include "v4l2ucp/v4l2controls.h"
 #include "v4l2ucp/v4l2ucp.h"
 
+using std::placeholders::_1;
+
 int V4L2Control::exposure_auto = V4L2_EXPOSURE_MANUAL;
 int V4L2Control::focus_auto = 0;
 int V4L2Control::hue_auto = 0;
 int V4L2Control::whitebalance_auto = 0;
 
 V4L2Control::V4L2Control(const int fd, const struct v4l2_queryctrl &ctrl,
-    const std::string name) :
-//                         rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub) :
+    const std::string name, std::shared_ptr<rclcpp::Node> node) :
   fd(fd),
   cid(ctrl.id),
   ctrl_(ctrl),
   default_value(ctrl.default_value),
-  // pub_(pub),
   name_(name)
 {
   msg_.name = name_;
@@ -48,6 +48,18 @@ V4L2Control::V4L2Control(const int fd, const struct v4l2_queryctrl &ctrl,
   msg_.max = ctrl.maximum;
   INFO("'" << name << "' (from '" << ctrl.name << "') " << std::dec << msg_.type << " "
       << msg_.min << " " << msg_.max);
+  pub_ = node->create_publisher<std_msgs::msg::Int32>("feedback/" + name);
+  // TODO(lucasw) this isn't working currently, no response at all
+  sub_ = node->create_subscription<std_msgs::msg::Int32>("controls/" + name,
+      std::bind(&V4L2Control::callback, this, _1));
+}
+
+void V4L2Control::callback(
+    const std_msgs::msg::Int32::SharedPtr msg)
+{
+  INFO(name_ << " callback " << msg->data);
+  std::cout << " test " << std::endl;
+  // setValue(msg->data);
 }
 
 void V4L2Control::cacheValue(const struct v4l2_control &c)
@@ -69,6 +81,7 @@ void V4L2Control::cacheValue(const struct v4l2_control &c)
   }
 }
 
+// TODO(lucasw) need to review this
 void V4L2Control::queryCleanup(struct v4l2_queryctrl *ctrl)
 {
   switch (ctrl->id)
@@ -133,6 +146,7 @@ void V4L2Control::queryCleanup(struct v4l2_queryctrl *ctrl)
 
 void V4L2Control::setValue(int value)
 {
+  INFO(name_ << " new value " << value);
   struct v4l2_control c;
   c.id = cid;
   c.value = value;
@@ -184,9 +198,9 @@ void V4L2Control::updateValue(bool hwChanged)
     value_ = c.value;
     msg_.value = c.value;
     // TODO(lucasw) need to query hardware periodically to check on true values
-    // std_msgs::msg::Int32 msg;
-    // msg.data = c.value;
-    // pub_->publish(msg);
+    std_msgs::msg::Int32 int32_msg;
+    int32_msg.data = msg_.value;
+    pub_->publish(int32_msg);
     if (c.value != getValue())
     {
       // INFO(name_ << " setting value from cache " << getValue() << " to " << c.value);
@@ -204,34 +218,17 @@ void V4L2Control::resetToDefault()
  */
 V4L2IntegerControl::V4L2IntegerControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-    const std::string name) :
-  V4L2Control(fd, ctrl, name),
+    const std::string name, std::shared_ptr<rclcpp::Node> node) :
+  V4L2Control(fd, ctrl, name, node),
   minimum(ctrl.minimum), maximum(ctrl.maximum), step(ctrl.step)
 {
-  #if 0
-  int pageStep = (maximum - minimum) / 10;
-  if (step > pageStep)
-    pageStep = step;
-  sl = new QSlider(Qt::Horizontal, this);
-  sl->setMinimum(minimum);
-  sl->setMaximum(maximum);
-  sl->setPageStep(pageStep);
-  sl->setValue(default_value);
-  // sl->setLineStep(step);
-
-  QString defStr;
-  defStr.setNum(default_value);
-  le = new QLineEdit(this);
-  le->setText(defStr);
-  le->setValidator(new QIntValidator(minimum, maximum, this));
-  #endif
-
   updateValue();
 }
 
+#if 0
 void V4L2IntegerControl::setValue(int val)
 {
-  DEBUG(name_ << " " << val);
+  INFO(name_ << " new value " << val);
   if (val < minimum)
     val = minimum;
   if (val > maximum)
@@ -250,14 +247,14 @@ void V4L2IntegerControl::setValue(int val)
   }
   V4L2Control::setValue(val);
 }
-
+#endif
 /*
  * V4L2BooleanControl
  */
 V4L2BooleanControl::V4L2BooleanControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-    const std::string name) :
-  V4L2Control(fd, ctrl, name)
+    const std::string name, std::shared_ptr<rclcpp::Node> node) :
+  V4L2Control(fd, ctrl, name, node)
 {
   updateValue();
 }
@@ -267,8 +264,8 @@ V4L2BooleanControl::V4L2BooleanControl
  */
 V4L2MenuControl::V4L2MenuControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-    const std::string name) :
-  V4L2Control(fd, ctrl, name)
+    const std::string name, std::shared_ptr<rclcpp::Node> node) :
+  V4L2Control(fd, ctrl, name, node)
 {
   for (int i = ctrl.minimum; i <= ctrl.maximum; i++)
   {
@@ -296,8 +293,8 @@ V4L2MenuControl::V4L2MenuControl
  */
 V4L2ButtonControl::V4L2ButtonControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-    const std::string name) :
-  V4L2Control(fd, ctrl, name)
+    const std::string name, std::shared_ptr<rclcpp::Node> node) :
+  V4L2Control(fd, ctrl, name, node)
 {
   updateValue();
 }

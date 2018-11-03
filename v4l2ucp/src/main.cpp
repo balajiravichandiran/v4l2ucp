@@ -33,6 +33,8 @@ int main(int argc, char **argv)
   // even when executed simultaneously within a launch file.
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
   auto v4l2ucp = std::make_shared<V4l2Ucp>();
+  if (!v4l2ucp->init())
+    return -1;
   rclcpp::spin(v4l2ucp);
   INFO("node done");
   rclcpp::shutdown();
