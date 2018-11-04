@@ -54,7 +54,7 @@ protected:
   int cid;
   v4l2_queryctrl ctrl_;
   int default_value;
-  const std::string name_;
+  // const std::string name_;
   int value_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_;

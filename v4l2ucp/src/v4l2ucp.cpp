@@ -129,6 +129,7 @@ void V4l2Ucp::setControl(const std::shared_ptr<v4l2ucp::srv::SetControl::Request
     std::shared_ptr<v4l2ucp::srv::SetControl::Response> res)
 {
   const std::string name = req->control.name;
+  DEBUG("get control " << name << " " << req->control.value);
   if (controls_.count(name) < 1)
   {
     // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
@@ -144,6 +145,7 @@ void V4l2Ucp::getControl(const std::shared_ptr<v4l2ucp::srv::SetControl::Request
     std::shared_ptr<v4l2ucp::srv::SetControl::Response> res)
 {
   const std::string name = req->control.name;
+  DEBUG("get control " << name);
   if (controls_.count(name) < 1)
   {
     // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
@@ -220,19 +222,23 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   switch (ctrl.type)
   {
   case V4L2_CTRL_TYPE_INTEGER:
-    controls_[name] = std::make_shared<V4L2IntegerControl>(
+    // TODO(lucasw) This doesn't work
+    // controls_[name] = std::make_shared<V4L2IntegerControl>(
+    //    V4L2IntegerControl(fd, ctrl, name, shared_from_this()));
+    // Memory isn't alocated correctly
+    controls_[name].reset( new
         V4L2IntegerControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_BOOLEAN:
-    controls_[name] = std::make_shared<V4L2BooleanControl>(
+    controls_[name].reset(new
         V4L2BooleanControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_MENU:
-    controls_[name] = std::make_shared<V4L2MenuControl>(
+    controls_[name].reset(new
         V4L2MenuControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_BUTTON:
-    controls_[name] = std::make_shared<V4L2ButtonControl>(
+    controls_[name].reset(new
         V4L2ButtonControl(fd, ctrl, name, shared_from_this()));
     break;
   case V4L2_CTRL_TYPE_INTEGER64:

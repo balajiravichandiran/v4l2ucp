@@ -35,7 +35,7 @@
 // #define ROS_DEBUG(msg, ...) // ##__VA_ARGS__
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
-#define PRINT(msg) "[" << __FILENAME__ << ":" << std::dec << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
+#define PRINT(msg) std::hex << std::this_thread::get_id() << std::dec << " [" << __FILENAME__ << ":" << std::dec << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
 #define INFO(msg) std::cout << "I " << PRINT(msg)
 #define WARN(msg) std::cout << "W " << PRINT(msg)
 #define ERROR(msg) std::cerr << "E " << PRINT(msg)

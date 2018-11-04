@@ -38,15 +38,15 @@ V4L2Control::V4L2Control(const int fd, const struct v4l2_queryctrl &ctrl,
   fd(fd),
   cid(ctrl.id),
   ctrl_(ctrl),
-  default_value(ctrl.default_value),
-  name_(name)
+  default_value(ctrl.default_value)
+  // name_(name)
 {
-  msg_.name = name_;
+  msg_.name = name;
   msg_.type = ctrl.type;
   msg_.value = default_value;
   msg_.min = ctrl.minimum;
   msg_.max = ctrl.maximum;
-  INFO("'" << name << "' (from '" << ctrl.name << "') " << std::dec << msg_.type << " "
+  INFO("'" << msg_.name << "' (from '" << msg_.name << "') " << std::dec << msg_.type << " "
       << msg_.min << " " << msg_.max);
   pub_ = node->create_publisher<std_msgs::msg::Int32>("feedback/" + name);
   // TODO(lucasw) this isn't working currently, no response at all
@@ -57,9 +57,8 @@ V4L2Control::V4L2Control(const int fd, const struct v4l2_queryctrl &ctrl,
 void V4L2Control::callback(
     const std_msgs::msg::Int32::SharedPtr msg)
 {
-  INFO(name_ << " callback " << msg->data);
-  std::cout << " test " << std::endl;
-  // setValue(msg->data);
+  // INFO(name_ << " callback " << msg->data);
+  setValue(msg->data);
 }
 
 void V4L2Control::cacheValue(const struct v4l2_control &c)
@@ -146,13 +145,13 @@ void V4L2Control::queryCleanup(struct v4l2_queryctrl *ctrl)
 
 void V4L2Control::setValue(int value)
 {
-  INFO(name_ << " new value " << value);
+  DEBUG(msg_.name << " new value " << value);
   struct v4l2_control c;
   c.id = cid;
   c.value = value;
   if (v4l2_ioctl(fd, VIDIOC_S_CTRL, &c) == -1)
   {
-    ERROR(name_ << " Unable to set control " << strerror(errno));
+    ERROR(msg_.name << " Unable to set control " << strerror(errno));
     updateValue(false);
   }
   else
@@ -190,7 +189,7 @@ void V4L2Control::updateValue(bool hwChanged)
   c.id = cid;
   if (v4l2_ioctl(fd, VIDIOC_G_CTRL, &c) == -1)
   {
-    ERROR(name_ << " Unable to get control " << strerror(errno));
+    ERROR(ctrl.name << " Unable to get control " << strerror(errno));
   }
   else
   {
@@ -274,13 +273,13 @@ V4L2MenuControl::V4L2MenuControl
     qm.index = i;
     if (v4l2_ioctl(fd, VIDIOC_QUERYMENU, &qm) == 0)
     {
-      INFO(name_ << " " << qm.name);
+      INFO(ctrl.name << " " << qm.name);
       // cb->insertItem(i, (const char *)qm.name);
       // TODO(lucasw) add menu item to ros params
     }
     else
     {
-      ERROR(name_ << " Unable to get menu item" << qm.index);
+      ERROR(ctrl.name << " Unable to get menu item" << qm.index);
       // cb->insertItem(i, "Unknown");
     }
   }
