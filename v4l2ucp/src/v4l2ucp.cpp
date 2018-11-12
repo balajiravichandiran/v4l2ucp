@@ -40,8 +40,8 @@ V4l2Ucp::V4l2Ucp() : Node("v4l2ucp")
 bool V4l2Ucp::init()
 {
   std::string device = "/dev/video0";
-  get_parameter_or("~device", device, device);
-
+  get_parameter_or("device", device, device);
+  RCLCPP_INFO(get_logger(), "opening device %s", device.c_str());
   fd = v4l2_open(device.c_str(), O_RDWR, 0);
   if (fd < 0)
   {
