@@ -31,8 +31,8 @@
 #define ROS_INFO(msg, ...) printf(msg,  ##__VA_ARGS__)
 #define ROS_ERROR(msg, ...) printf(msg,  ##__VA_ARGS__)
 #define ROS_WARN(msg, ...) printf(msg,  ##__VA_ARGS__)
-#define ROS_DEBUG(msg, ...) printf(msg,  ##__VA_ARGS__)
-// #define ROS_DEBUG(msg, ...) // ##__VA_ARGS__
+// #define ROS_DEBUG(msg, ...) printf(msg,  ##__VA_ARGS__)
+#define ROS_DEBUG(msg, ...) // ##__VA_ARGS__
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define PRINT(msg) std::hex << std::this_thread::get_id() << std::dec << " [" << __FILENAME__ << ":" << std::dec << __LINE__ << " " << __FUNCTION__ << "] " << msg << "\n"
