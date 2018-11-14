@@ -24,6 +24,7 @@
 #include <functional>
 #include <libv4l2.h>
 #include <rclcpp/rclcpp.hpp>
+#include <rcl_interfaces/msg/parameter_type.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/int32.hpp>
 #include <string>
@@ -109,6 +110,11 @@ bool V4l2Ucp::init()
       }
     }
   }
+
+  parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
+  param_sub_ = parameters_client_->on_parameter_event(
+      std::bind(&V4l2Ucp::onParameterEvent, this, _1));
+
   set_control_ = create_service<v4l2ucp::srv::SetControl>("set_control",
       std::bind(&V4l2Ucp::setControl, this, _1, _2));
   get_control_ = create_service<v4l2ucp::srv::SetControl>("get_control",
@@ -155,6 +161,26 @@ void V4l2Ucp::getControl(const std::shared_ptr<v4l2ucp::srv::SetControl::Request
   }
   controls_[name]->updateValue();
   res->control = controls_[name]->msg_;
+}
+
+void V4l2Ucp::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
+{
+  // auto -> ParameterValue
+  for (auto & changed_parameter : event->changed_parameters) {
+    std::string name = changed_parameter.name.substr(std::string("controls/").size());
+    if (controls_.count(name) < 1)
+    {
+      // TODO(lucasw) maybe should rescan controls, or provide that function elsewhere
+      RCLCPP_WARN(get_logger(), "No %s in controls", name.c_str());
+      continue;
+    }
+    if (changed_parameter.value.type != rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
+      RCLCPP_WARN(get_logger(), "Wrong type %s %d",
+          name, changed_parameter.value.type);
+      continue;
+    }
+    controls_[name]->setValue(changed_parameter.value.integer_value, false);
+  }
 }
 
 #if 0

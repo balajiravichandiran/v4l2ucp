@@ -40,16 +40,17 @@ public:
       const std::string name,
       std::shared_ptr<rclcpp::Node> node);
   // this reads the value from hardware
-  virtual void updateValue(bool hwChanged = false);
+  virtual void updateValue(bool hwChanged = false, bool update_param = true);
   virtual void resetToDefault();
   // this sets it in hardward
-  virtual void setValue(int value);
+  virtual void setValue(int value, bool update_param = true);
 
   v4l2ucp::msg::Control msg_;
 
   virtual int getValue() { return value_; }
 
 protected:
+  std::shared_ptr<rclcpp::Node> node_;
   int fd;
   int cid;
   v4l2_queryctrl ctrl_;

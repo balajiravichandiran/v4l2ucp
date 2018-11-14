@@ -35,6 +35,7 @@ int V4L2Control::whitebalance_auto = 0;
 
 V4L2Control::V4L2Control(const int fd, const struct v4l2_queryctrl &ctrl,
     const std::string name, std::shared_ptr<rclcpp::Node> node) :
+  node_(node),
   fd(fd),
   cid(ctrl.id),
   ctrl_(ctrl),
@@ -48,8 +49,8 @@ V4L2Control::V4L2Control(const int fd, const struct v4l2_queryctrl &ctrl,
   msg_.max = ctrl.maximum;
   INFO("'" << msg_.name << "' (from '" << msg_.name << "') " << std::dec << msg_.type << " "
       << msg_.min << " " << msg_.max);
+
   pub_ = node->create_publisher<std_msgs::msg::Int32>("feedback/" + name);
-  // TODO(lucasw) this isn't working currently, no response at all
   sub_ = node->create_subscription<std_msgs::msg::Int32>("controls/" + name,
       std::bind(&V4L2Control::callback, this, _1));
 }
@@ -143,7 +144,7 @@ void V4L2Control::queryCleanup(struct v4l2_queryctrl *ctrl)
   }
 }
 
-void V4L2Control::setValue(int value)
+void V4L2Control::setValue(int value, const bool update_param)
 {
   DEBUG(msg_.name << " new value " << value);
   struct v4l2_control c;
@@ -152,16 +153,16 @@ void V4L2Control::setValue(int value)
   if (v4l2_ioctl(fd, VIDIOC_S_CTRL, &c) == -1)
   {
     ERROR(msg_.name << " Unable to set control " << strerror(errno));
-    updateValue(false);
+    updateValue(false, update_param);
   }
   else
   {
     value_ = value;
-    updateValue(true);
+    updateValue(true, update_param);
   }
 }
 
-void V4L2Control::updateValue(bool hwChanged)
+void V4L2Control::updateValue(bool hwChanged, const bool update_param)
 {
   struct v4l2_queryctrl ctrl = { 0 };
   ctrl.id = cid;
@@ -199,6 +200,12 @@ void V4L2Control::updateValue(bool hwChanged)
     // TODO(lucasw) need to query hardware periodically to check on true values
     std_msgs::msg::Int32 int32_msg;
     int32_msg.data = msg_.value;
+
+    if (update_param)
+    {
+      node_->set_parameters({rclcpp::Parameter("controls/" + msg_.name, value_)});
+    }
+    // get_parameter_or("controls/" + msg_.name, value_, value_);
     pub_->publish(int32_msg);
     if (c.value != getValue())
     {

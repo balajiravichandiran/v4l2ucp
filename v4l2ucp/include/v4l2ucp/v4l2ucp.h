@@ -20,6 +20,7 @@
 
  */
 #include <map>
+#include <rcl_interfaces/msg/parameter_event.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/int32.hpp>
@@ -69,7 +70,12 @@ private:
   void getControl(const std::shared_ptr<v4l2ucp::srv::SetControl::Request> req,
       std::shared_ptr<v4l2ucp::srv::SetControl::Response> res);
 
+  void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
+
   void add_control(const struct v4l2_queryctrl &ctrl, int fd);
+
+  rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
+  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
 
   std::map<std::string, std::shared_ptr<V4L2Control> > controls_;
 };
