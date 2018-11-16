@@ -62,6 +62,7 @@ void V4L2Control::callback(
   setValue(msg->data);
 }
 
+// TODO(lucasw) is this needed?
 void V4L2Control::cacheValue(const struct v4l2_control &c)
 {
   switch (c.id)
@@ -273,6 +274,7 @@ V4L2MenuControl::V4L2MenuControl
     const std::string name, std::shared_ptr<rclcpp::Node> node) :
   V4L2Control(fd, ctrl, name, node)
 {
+  std::vector<std::string> items;
   for (int i = ctrl.minimum; i <= ctrl.maximum; i++)
   {
     struct v4l2_querymenu qm;
@@ -283,6 +285,9 @@ V4L2MenuControl::V4L2MenuControl
       INFO(ctrl.name << " " << qm.name);
       // cb->insertItem(i, (const char *)qm.name);
       // TODO(lucasw) add menu item to ros params
+      std::stringstream ss;
+      ss << qm.name;
+      items.push_back(ss.str());
     }
     else
     {
@@ -290,6 +295,8 @@ V4L2MenuControl::V4L2MenuControl
       // cb->insertItem(i, "Unknown");
     }
   }
+
+  node_->set_parameters({rclcpp::Parameter("controls/" + name + "/menu_items", items)});
   // cb->setCurrentIndex(default_value);
   updateValue();
 }
