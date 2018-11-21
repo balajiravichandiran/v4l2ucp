@@ -1,0 +1,3 @@
+v4l2ucp:
+  ros__parameters:
+    device: "/dev/video0"
