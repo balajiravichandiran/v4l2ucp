@@ -32,11 +32,9 @@ int V4L2Control::hue_auto = 0;
 int V4L2Control::whitebalance_auto = 0;
 
 V4L2Control::V4L2Control(int fd, const struct v4l2_queryctrl &ctrl,
-                         MainWindow *mw,
-                         ros::Publisher* pub) :
+                         std::shared_ptr<V4l2Ucp> mw) :
   cid(ctrl.id),
   default_value(ctrl.default_value),
-  pub_(pub),
   mw(mw)
 {
   this->fd = fd;
@@ -175,7 +173,6 @@ void V4L2Control::updateStatus(bool hwChanged)
     std_msgs::Int32 msg;
     msg.data = c.value;
     // TODO(lucasw) need to query hardware periodically to check on true values
-    pub_->publish(msg);
     if (c.value != getValue())
     {
       // ROS_INFO_STREAM(name << " setting value from cache " << getValue() << " to " << c.value);
@@ -194,8 +191,7 @@ void V4L2Control::resetToDefault()
  */
 V4L2IntegerControl::V4L2IntegerControl
 (int fd, const struct v4l2_queryctrl &ctrl,
-    MainWindow *mw,
-                         ros::Publisher* pub) :
+    std::shared_ptr<V4l2Ucp> mw) :
   V4L2Control(fd, ctrl, mw, pub),
   minimum(ctrl.minimum), maximum(ctrl.maximum), step(ctrl.step)
 {
@@ -246,9 +242,8 @@ void V4L2IntegerControl::setValue(int val)
  * V4L2BooleanControl
  */
 V4L2BooleanControl::V4L2BooleanControl
-(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-                         ros::Publisher* pub) :
-  V4L2Control(fd, ctrl, mw, pub)
+(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw) :
+  V4L2Control(fd, ctrl, mw)
 {
   updateStatus();
 }
@@ -257,9 +252,8 @@ V4L2BooleanControl::V4L2BooleanControl
  * V4L2MenuControl
  */
 V4L2MenuControl::V4L2MenuControl
-(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-                         ros::Publisher* pub) :
-  V4L2Control(fd, ctrl, mw, pub)
+(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw) :
+  V4L2Control(fd, ctrl, mw)
 {
   for (int i = ctrl.minimum; i <= ctrl.maximum; i++)
   {
@@ -286,9 +280,8 @@ V4L2MenuControl::V4L2MenuControl
  * V4L2ButtonControl
  */
 V4L2ButtonControl::V4L2ButtonControl
-(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-                         ros::Publisher* pub) :
-  V4L2Control(fd, ctrl, mw, pub)
+(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw) :
+  V4L2Control(fd, ctrl, mw)
 {
   updateStatus();
 }

@@ -29,7 +29,7 @@
 #define V4L2_CID_IRIS_RELATIVE      (V4L2_CID_CAMERA_CLASS_BASE+18)
 #endif
 
-class MainWindow;
+class V4l2Ucp;
 
 class V4L2Control
 {
@@ -46,16 +46,14 @@ public:
   virtual int getValue() { return value_; }
 
 protected:
-  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
   int fd;
   int cid;
   int default_value;
   char name[32];
-  ros::Publisher* pub_;
 
 private:
-  MainWindow *mw;
+  std::shared_ptr<V4l2Ucp> mw;
 
   int value_;
 
@@ -75,8 +73,7 @@ private:
 class V4L2IntegerControl : public V4L2Control
 {
 public:
-  V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+  V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
 
   void setValue(int val);
 
@@ -89,15 +86,13 @@ private:
 class V4L2BooleanControl : public V4L2Control
 {
 public:
-  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
 };
 
 class V4L2MenuControl : public V4L2Control
 {
 public:
-  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
 };
 
 class V4L2ButtonControl : public V4L2Control
@@ -105,8 +100,7 @@ class V4L2ButtonControl : public V4L2Control
 public:
   // void resetToDefault();
 
-  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, MainWindow *mw,
-      ros::Publisher* pub);
+  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
 };
 
 #endif  // V4L2UCP_V4L2CONTROLS_H

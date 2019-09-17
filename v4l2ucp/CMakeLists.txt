@@ -5,6 +5,7 @@ project(v4l2ucp)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  ddynamic_reconfigure
   roscpp
   roslint
   std_msgs
@@ -210,8 +211,6 @@ install(TARGETS v4l2ucp v4l2ctrl
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
-#############
-## Testing ##
 #############
 
 ## Add gtest based cpp test target and link libraries
