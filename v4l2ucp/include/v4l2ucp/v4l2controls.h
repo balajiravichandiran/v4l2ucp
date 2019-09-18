@@ -45,16 +45,27 @@ public:
 
   virtual int getValue() { return value_; }
 
+  int min() const
+  {
+    return minimum;
+  }
+
+  int max() const
+  {
+    return maximum;
+  }
+
+
 protected:
-  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
+  V4L2Control(int fd, const struct v4l2_queryctrl &ctrl);
   int fd;
   int cid;
+  int minimum;
+  int maximum;
   int default_value;
   char name[32];
 
 private:
-  std::shared_ptr<V4l2Ucp> mw;
-
   int value_;
 
   /* Not pretty we use these to keep track of the value of some special
@@ -73,26 +84,24 @@ private:
 class V4L2IntegerControl : public V4L2Control
 {
 public:
-  V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
+  V4L2IntegerControl(int fd, const struct v4l2_queryctrl &ctrl);
 
   void setValue(int val);
 
 private:
-  int minimum;
-  int maximum;
   int step;
 };
 
 class V4L2BooleanControl : public V4L2Control
 {
 public:
-  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
+  V4L2BooleanControl(int fd, const struct v4l2_queryctrl &ctrl);
 };
 
 class V4L2MenuControl : public V4L2Control
 {
 public:
-  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
+  V4L2MenuControl(int fd, const struct v4l2_queryctrl &ctrl);
 };
 
 class V4L2ButtonControl : public V4L2Control
@@ -100,7 +109,7 @@ class V4L2ButtonControl : public V4L2Control
 public:
   // void resetToDefault();
 
-  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl, std::shared_ptr<V4l2Ucp> mw);
+  V4L2ButtonControl(int fd, const struct v4l2_queryctrl &ctrl);
 };
 
 #endif  // V4L2UCP_V4L2CONTROLS_H

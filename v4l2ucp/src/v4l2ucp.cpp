@@ -27,7 +27,7 @@
 #include <std_msgs/Empty.h>
 #include <string>
 #include <sys/ioctl.h>
-#include <4l2ucp/v4l2ucp.h>
+#include <v4l2ucp/v4l2ucp.h>
 
 V4l2Ucp::V4l2Ucp() :
   fd(-1)
@@ -130,42 +130,54 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   name.erase(std::remove_if(name.begin(), name.end(),
       (int(*)(int))not_alnum), name.end());
 
-  // TODO(lucasw) clear out all other params under controls first
-  // a previous run would leave leftovers
-#if 0
-  ros::param::set("controls/" + name + "/name", name_ss.str());
-  ros::param::set("controls/" + name + "/topic", "controls/" + name);
-  ros::param::set("controls/" + name + "/min", ctrl.minimum);
-  ros::param::set("controls/" + name + "/max", ctrl.maximum);
-  ros::param::set("controls/" + name + "/default", ctrl.minimum);
-#endif
-
   if (ctrl.flags & V4L2_CTRL_FLAG_DISABLED)
     return;
 
   switch (ctrl.type)
   {
   case V4L2_CTRL_TYPE_INTEGER:
-    integer_controls_[name] = std::make_shared<V4L2IntegerControl>(fd, ctrl, this);
+  {
+    integer_controls_[name] = std::make_shared<V4L2IntegerControl>(fd, ctrl);
+    const int val = integer_controls_[name]->getValue();
+    const int min = integer_controls_[name]->min();
+    const int max = integer_controls_[name]->max();
     // TODO(lucasw) how to set the value after init?
-    ddr_.registerVariable(name, integer_controls_[name]->getValue(),
-                          boost::bind(&V4l2Ucp::integerControlCallback, this, _1, name));
+    ddr_->registerVariable<int>(name, val,
+                           boost::bind(&V4L2IntegerControl::setValue, integer_controls_[name], _1),
+                           name, min, max);
     break;
+  }
   case V4L2_CTRL_TYPE_BOOLEAN:
-    bool_controls_[name] = std::make_shared<V4L2BooleanControl>(fd, ctrl, this);
-    ddr_.registerVariable(name, integer_controls_[name]->getValue(),
-                          boost::bind(&V4l2Ucp::boolControlCallback, this, _1, name));
+  {
+    bool_controls_[name] = std::make_shared<V4L2BooleanControl>(fd, ctrl);
+    const bool val = bool_controls_[name]->getValue();
+    // const bool min = bool_controls_[name]->min();
+    // const bool max = bool_controls_[name]->max();
+    ddr_->registerVariable<bool>(name, val,
+                           boost::bind(&V4L2BooleanControl::setValue, bool_controls_[name], _1),
+                           name);  // , min, max);
     break;
+  }
   case V4L2_CTRL_TYPE_MENU:
-    menu_controls_[name] = std::make_shared<V4L2MenuControl>(fd, ctrl, this);
-    ddr_.registerVariable(name, integer_controls_[name]->getValue(),
-                          boost::bind(&V4l2Ucp::menuControlCallback, this, _1, name));
+  {
+    menu_controls_[name] = std::make_shared<V4L2MenuControl>(fd, ctrl);
+    ddr_->registerVariable<int>(name, menu_controls_[name]->getValue(),
+                           boost::bind(&V4L2MenuControl::setValue, menu_controls_[name], _1),
+                           name,
+                           menu_controls_[name]->min(),
+                           menu_controls_[name]->max());
     break;
+  }
   case V4L2_CTRL_TYPE_BUTTON:
-    button_controls_[name] = std::make_shared<V4L2ButtonControl>(fd, ctrl, this);
-    ddr_.registerVariable(name, integer_controls_[name]->getValue(),
-                          boost::bind(&V4l2Ucp::buttonControlCallback, this, _1, name));
+  {
+    button_controls_[name] = std::make_shared<V4L2ButtonControl>(fd, ctrl);
+    ddr_->registerVariable<int>(name, button_controls_[name]->getValue(),
+                           boost::bind(&V4L2ButtonControl::setValue, button_controls_[name], _1),
+                           name,
+                           button_controls_[name]->min(),
+                           button_controls_[name]->max());
     break;
+  }
   case V4L2_CTRL_TYPE_INTEGER64:
     break;
   case V4L2_CTRL_TYPE_CTRL_CLASS:
@@ -203,34 +215,6 @@ void V4l2Ucp::add_control(const struct v4l2_queryctrl &ctrl, int fd)
   }
 
   // TODO(lucasw) have a ros timer that updates the values from hardware
-}
-
-void V4l2Ucp::integerControlCallback(
-    int value, std::string name)
-{
-  // The ui is overriding this control immediately after it is set
-  // need to set the slider to this value.
-  // ROS_INFO_STREAM("integer " << name << " " << msg->data);
-  integer_controls_[name]->setValue(value);
-}
-
-void V4l2Ucp::boolControlCallback(
-    bool value, std::string name)
-{
-  bool_controls_[name]->setValue(value);
-}
-
-void V4l2Ucp::menuControlCallback(
-    int value, std::string name)
-{
-  menu_controls_[name]->setValue(value);
-}
-
-void V4l2Ucp::buttonControlCallback(
-    int value, std::string name)
-{
-  // TODO(lucasw) this doesn't do anything
-  button_controls_[name]->setValue(value);
 }
 
 void V4l2Ucp::about()

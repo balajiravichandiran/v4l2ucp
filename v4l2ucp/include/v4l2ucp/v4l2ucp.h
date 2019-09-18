@@ -42,17 +42,12 @@ private:
 
   // ros::Publisher configured_pub_;
 
-  std::map<std::string, std::unique_ptr<V4L2IntegerControl>> integer_controls_;
-  std::map<std::string, std::unique_ptr<V4L2BooleanControl>> bool_controls_;
-  std::map<std::string, std::unique_ptr<V4L2MenuControl>> menu_controls_;
-  std::map<std::string, std::unique_ptr<V4L2ButtonControl>> button_controls_;
+  std::map<std::string, std::shared_ptr<V4L2IntegerControl>> integer_controls_;
+  std::map<std::string, std::shared_ptr<V4L2BooleanControl>> bool_controls_;
+  std::map<std::string, std::shared_ptr<V4L2MenuControl>> menu_controls_;
+  std::map<std::string, std::shared_ptr<V4L2ButtonControl>> button_controls_;
 
   void add_control(const struct v4l2_queryctrl &ctrl, int fd);
-
-  void integerControlCallback(int value, std::string name);
-  void boolControlCallback(bool value, std::string name);
-  void menuControlCallback(int value, std::string name);
-  void buttonControlCallback(int value, std::string name);
 };
 
 #endif  // V4L2UCP_V4L2UCP_H
