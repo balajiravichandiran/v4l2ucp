@@ -15,6 +15,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+    TODO(lucasw) keeping this around for example purposes, delete it when the ros node is fully working.
  */
 #include <errno.h>
 #include <fcntl.h>
