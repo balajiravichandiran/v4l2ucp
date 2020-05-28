@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <functional>
 #include <libv4l2.h>
+#include <memory>
 #include <ros/ros.h>
 #include <std_msgs/Empty.h>
 #include <string>

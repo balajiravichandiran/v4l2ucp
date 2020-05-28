@@ -22,6 +22,7 @@
 
 #include <ddynamic_reconfigure/ddynamic_reconfigure.h>
 #include <map>
+#include <memory>
 #include <ros/ros.h>
 #include <std_msgs/Int32.h>
 #include <string>
