@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(v4l2ucp)
+cmake_minimum_required(VERSION 3.0)
+project(v4l2ucp VERSION 0.0.2)
 
 # This doesn't work for mixed C/C++, v4l2ctrl.c is c, when that is removed can restore this
 # add_compile_options(-std=c++1z)
