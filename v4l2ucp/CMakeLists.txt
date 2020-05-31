@@ -17,7 +17,6 @@ roslint_cpp()
 
 set(V4L2UCP_VERSION 2.0.2)
 add_definitions(-Wall -DV4L2UCP_VERSION="${V4L2UCP_VERSION}")
-find_package(Qt5Widgets REQUIRED)
 
 find_library(V4L2_LIBRARY v4l2)
 if (V4L2_LIBRARY)
@@ -29,7 +28,7 @@ endif (V4L2_LIBRARY)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES v4l2ucp
-#  CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp std_msgs
+#  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
